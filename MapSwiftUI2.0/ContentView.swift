@@ -9,15 +9,41 @@ import SwiftUI
 import MapKit
 
 struct ContentView: View {
-        
+    
     @State var title = ""
     @State var subtitle = ""
+    @State var lat = ""
+    @State var long = ""
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            MapView(title: $title, subtitle: $subtitle).edgesIgnoringSafeArea(.all)
-            HStack(spacing: 12){
-                
+            MapView(title: $title, subtitle: $subtitle, lat: $lat, long: $long).edgesIgnoringSafeArea(.all)
+            if self.title != "" {
+                HStack(spacing: 12){
+                    Image(systemName: "info.circle.fill")
+                        .font(.largeTitle)
+                        .foregroundColor(.black)
+                    
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text(self.title)
+                            .font(.body)
+                            .foregroundColor(.black)
+                        Text(self.subtitle)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        HStack(spacing: 12){
+                            Text("LAT: \(self.lat)")
+                                .font(.caption)
+                                .foregroundColor(.black)
+                            Text("Long: \(self.long)")
+                                .font(.caption)
+                                .foregroundColor(.black)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color("Color"))
+                .cornerRadius(15)
             }
         }
     }
@@ -30,6 +56,8 @@ struct MapView: UIViewRepresentable {
     
     @Binding var title: String
     @Binding var subtitle: String
+    @Binding var lat: String
+    @Binding var long: String
     
     func makeCoordinator() -> Coordinator {
         return MapView.Coordinator(parent1: self)
@@ -61,7 +89,7 @@ struct MapView: UIViewRepresentable {
     class Coordinator: NSObject, MKMapViewDelegate {
         var parent: MapView
         
-         init(parent1: MapView) {
+        init(parent1: MapView) {
             parent = parent1
         }
         
@@ -75,13 +103,21 @@ struct MapView: UIViewRepresentable {
         }
         
         func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, didChange newState: MKAnnotationView.DragState, fromOldState oldState: MKAnnotationView.DragState) {
-           
+            
             CLGeocoder().reverseGeocodeLocation(CLLocation(
-                latitude:(view.annotation?.coordinate.latitude)!,
+                                                    latitude:(view.annotation?.coordinate.latitude)!,
                                                     longitude: (view.annotation?.coordinate.longitude)!)) { (places, err) in
-                self.parent.title = (places?.first?.name)!
-                self.parent.subtitle = (places?.first?.locality)!
+                
+                if err != nil {
+                    print((err?.localizedDescription)!)
+                    return
+                }
+                self.parent.title = (places?.first?.name ?? places?.first?.postalCode)!
+                self.parent.subtitle = (places?.first?.locality ?? places?.first?.country ?? "None")
             }
+            self.parent.lat = String(format: "%.5f", (view.annotation?.coordinate.latitude)!)
+            self.parent.long = String(format: "%.5f", (view.annotation?.coordinate.longitude)! )
+
         }
     }
 }

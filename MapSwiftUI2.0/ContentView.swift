@@ -15,27 +15,35 @@ struct ContentView: View {
     @State var lat = ""
     @State var long = ""
     
+    @State var manager = CLLocationManager()
+    @State var alert = false
+    
     var body: some View {
         ZStack(alignment: .bottom) {
-            MapView(title: $title, subtitle: $subtitle, lat: $lat, long: $long).edgesIgnoringSafeArea(.all)
+            MapView(title: $title, subtitle: $subtitle, lat: $lat, long: $long, manager: $manager, alert: $alert)
+                .edgesIgnoringSafeArea(.all)
+                .alert(isPresented: $alert) {
+                    Alert(title: Text("Please Enable Location Access In Settings Pannel"))
+                }
             if self.title != "" {
                 HStack(spacing: 12){
                     Image(systemName: "info.circle.fill")
+                        .renderingMode(.original)
                         .font(.largeTitle)
                         .foregroundColor(.black)
                     
                     VStack(alignment: .leading, spacing: 15) {
                         Text(self.title)
-                            .font(.body)
+                            .font(.headline)
                             .foregroundColor(.black)
                         Text(self.subtitle)
-                            .font(.caption)
+                            .font(.body)
                             .foregroundColor(.gray)
                         HStack(spacing: 12){
                             Text("LAT: \(self.lat)")
                                 .font(.caption)
                                 .foregroundColor(.black)
-                            Text("Long: \(self.long)")
+                            Text("LONG: \(self.long)")
                                 .font(.caption)
                                 .foregroundColor(.black)
                         }
@@ -58,6 +66,13 @@ struct MapView: UIViewRepresentable {
     @Binding var subtitle: String
     @Binding var lat: String
     @Binding var long: String
+    @Binding var manager: CLLocationManager
+    @Binding var alert: Bool
+    
+    @State var coordinate = CLLocationCoordinate2D(latitude: 34.746483, longitude: -92.289597)
+    
+    
+    let map = MKMapView()
     
     func makeCoordinator() -> Coordinator {
         return MapView.Coordinator(parent1: self)
@@ -65,11 +80,8 @@ struct MapView: UIViewRepresentable {
     
     func makeUIView(context: UIViewRepresentableContext<MapView>) -> MKMapView {
         
-        let map = MKMapView()
         
-        let coordinate  = CLLocationCoordinate2D(latitude: 34.746483, longitude: -92.289597)
-        
-        map.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 34.746483, longitude: -92.289597), latitudinalMeters: 500, longitudinalMeters: 500)
+        map.region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
         
         let annotation = MKPointAnnotation()
         annotation.coordinate = coordinate
@@ -77,6 +89,8 @@ struct MapView: UIViewRepresentable {
         map.delegate = context.coordinator
         
         map.addAnnotation(annotation)
+        manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
         
         return map
     }
@@ -86,11 +100,37 @@ struct MapView: UIViewRepresentable {
     }
     
     
-    class Coordinator: NSObject, MKMapViewDelegate {
+    class Coordinator: NSObject, MKMapViewDelegate, CLLocationManagerDelegate {
         var parent: MapView
         
         init(parent1: MapView) {
             parent = parent1
+        }
+        
+        func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+            if manager.authorizationStatus == .denied {
+                parent.alert.toggle()
+            }
+        }
+        
+        func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+//            let location = locations.last
+//            let point = MKPointAnnotation()
+//            parent.coordinate = location!.coordinate
+//
+//            point.title = "Test"
+//            point.subtitle = "sub test"
+//
+//            point.coordinate = location!.coordinate
+//
+//            self.parent.map.addAnnotation(point)
+//
+//            let region = MKCoordinateRegion(center: location!.coordinate, latitudinalMeters: 500, longitudinalMeters: 500)
+//            self.parent.map.region = region
+            
+            
+            print("Hello World")
+            
         }
         
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
